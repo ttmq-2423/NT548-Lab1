@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"nat_gateway","Source":"./modules/nat_gateway","Dir":"modules/nat_gateway"},{"Key":"route_tables","Source":"./modules/route_tables","Dir":"modules/route_tables"},{"Key":"vpc","Source":"./modules/vpc","Dir":"modules/vpc"}]}
