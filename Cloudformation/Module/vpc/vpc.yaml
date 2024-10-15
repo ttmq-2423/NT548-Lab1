@@ -1,0 +1,274 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "VPC"
+Parameters:
+  paramVpcCIDR:
+    Type: String
+    Default: 10.192.0.0/16
+    Description: Enter the IP range (CIDR notation) for VPC
+
+  paramPublicSubnet1:
+      Type: String
+      Default: 10.192.10.0/16
+      Description: Enter the IP range (CIDR notation) for VPC pubSubnet1 in AZ A
+  
+  paramPublicSubnet2:
+    Type: String
+    Default: 10.192.11.0/16
+    Description: Enter the IP range (CIDR notation) for VPC pubSubnet2 in AZ B
+
+  paramPriSubnet1:
+      Type: String
+      Default: 10.192.20.0/24
+      Description: Enter the IP range (CIDR notation) for VPC priSubnet1 in AZ A
+  
+  paramPriSubnet2:
+    Type: String
+    Default: 10.192.21.0/24
+    Description: Enter the IP range (CIDR notation) for VPC priSubnet2 in AZ B
+
+  paramUniqueName:
+    Type: String
+    Description: Give a unique name for "CloudFormationLab" tag value
+    Default: CodeFormation Practise
+
+  CreateBy:
+      Type: String
+      Default: Cloudformation
+      Description: Represents for this tag is created by
+#-----------------------------------------------------
+Resources:
+  myVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref: paramVpcCIDR
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: myVPC
+        - Key: CreateBy
+          Value: !Ref CreateBy
+        - Key: MasteringCF
+          Value:  !Ref paramUniqueName    
+
+  myInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: myInternetGateway
+        - Key: CreateBy
+          Value: !Ref CreateBy
+        - Key: MasteringCF
+          Value:  !Ref paramUniqueName   
+
+  myAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref: myVPC
+      InternetGatewayId: !Ref: myInternetGateway
+#-----------------------------------------------------
+  myPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref: myVPC
+      Tags:
+      - Key: Name
+        Value: myPublicRouteTable
+      - Key: CreateBy
+        Value: !Ref CreateBy
+
+  myPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: myAttachGateway
+    Properties:
+       RouteTableId: !Ref: myPublicRouteTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId: !Ref: myInternetGateway
+#-----------------------------------------------------
+  myPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPublicSubnet1
+      MapPublicIpOnLaunch: true
+      #AvailabilityZone: "us-east-1a"
+      Tags:
+      - Key: Name
+        Value: myPublicSubnet
+      - Key: CreateBy
+        Value: !Ref CreateBy
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  myPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      CidrBlock: !Ref paramPublicSubnet2
+      MapPublicIpOnLaunch: true
+      #AvailabilityZone: "us-east-1a"
+      Tags:
+      - Key: Name
+        Value: myPublicSubnet
+      - Key: CreateBy
+        Value: !Ref CreateBy
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+#-----------------------------------------------------
+  myPublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPublicRouteTable
+      SubnetId:Ref: !Ref myPublicSubnet1
+
+  myPublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPublicRouteTable
+      SubnetId:Ref: !Ref myPublicSubnet2
+#-----------------------------------------------------
+ # Specify an Elastic IP (EIP) address for a NAT Gateway in AZ 1
+  myEIPforNatGateway1:
+    Type: AWS::EC2::EIP
+    DependsOn: myAttachGateway
+    Properties:
+      Domain: vpc # if the region supports EC2-Classic, the default is "standard", otherwise - "vpc"
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  myEIPforNatGateway2:
+    Type: AWS::EC2::EIP
+    DependsOn: myAttachGateway
+    Properties:
+      Domain: vpc # if the region supports EC2-Classic, the default is "standard", otherwise - "vpc"
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+ # Create a NAT Gateway in the public subnet for AZ 1
+  myNatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt myEIPforNatGateway1.AllocationId
+      SubnetId: !Ref myPublicSubnet1
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  myNatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt myEIPforNatGateway2.AllocationId
+      SubnetId: !Ref myPublicSubnet2
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+#-----------------------------------------------------
+  # Create a private route table for AZ 1
+  myPrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  myPrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref myVPC
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  myPrivateRouteForAz1:
+    Type: AWS::EC2::Route
+    DependsOn: myAttachGateway
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref myNatGateway1 
+
+  myPrivateRouteForAz2:
+    Type: AWS::EC2::Route
+    DependsOn: myAttachGateway
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref myNatGateway2
+#-----------------------------------------------------
+  myPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPriSubnet1
+      MapPublicIpOnLaunch: false # private subnet doesn't need public IP
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  # Create a private subnet in AZ 2
+  myPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref myVPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ] # AZ 2
+      CidrBlock: !Ref paramPriSubnet2
+      MapPublicIpOnLaunch: false # private subnet doesn't need public IP
+      Tags:
+      - Key: MasteringCF
+        Value:  !Ref paramUniqueName
+
+  # f) Associate the private route table with the private subnet in AZ 1
+  myPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable1
+      SubnetId: !Ref myPrivateSubnet1
+  
+  #  Associate the private route table with the private subnet in AZ 2
+  myPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref myPrivateRouteTable2
+      SubnetId: !Ref myPrivateSubnet2
+#-----------------------------------------------------
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+## =================== OUTPUTS =================== #
+Outputs:
+  outputVPC:
+    Description: A reference to the created VPC
+    Value: !Ref myVPC
+  outputPublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref myPublicSubnet1, !Ref myPublicSubnet2 ]]
+  outputPrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref myPrivateSubnet1, !Ref myPrivateSubnet2 ]]
+
+
+
+
+
+
+
+
