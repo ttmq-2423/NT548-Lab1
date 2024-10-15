@@ -37,6 +37,25 @@ module "route_tables" {
   private_subnet_ids = module.vpc.private_subnet_ids
 }
 
+module "EC2" {
+  source = "./modules/EC2"
+  public_subnet_ids = module.vpc.public_subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
+ public_security_group_id = module.aws_security_groups.aws_security_groups_public_sg_id
+  private_security_group_id = module.aws_security_groups.aws_security_groups_private_sg_id
+  key_name = "vockey" 
+}
+
+
+
+module "aws_security_groups" {
+  source = "./modules/aws_security_groups"
+  vpc_id = module.vpc.vpc_id
+  my_ip = "0.0.0.0/32" 
+}
+
+
+
 # Outputs
 output "vpc_id" {
   value = module.vpc.vpc_id
