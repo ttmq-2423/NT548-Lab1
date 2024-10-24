@@ -5,3 +5,6 @@ variable "vpc_id" {
 variable "my_ip" {
   type    = string
 }
+variable "public_subnets" {
+  type    = list(string)
+}
