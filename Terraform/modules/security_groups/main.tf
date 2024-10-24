@@ -49,12 +49,3 @@ resource "aws_security_group" "private_sg" {
   }
 }
 
-variable "vpc_id" {
-  type = string
-}
-
-variable "my_ip" {
-  type    = string
-  default = "0.0.0.0/0" 
-}
-

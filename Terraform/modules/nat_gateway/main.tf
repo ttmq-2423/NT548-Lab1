@@ -9,3 +9,4 @@ resource "aws_nat_gateway" "gw" {
 resource "aws_eip" "nat" {
   vpc = true
 }
+

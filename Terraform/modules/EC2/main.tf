@@ -6,12 +6,6 @@ resource "aws_instance" "public_ec2" {
   vpc_security_group_ids = [var.public_security_group_id]
   key_name = var.key_name 
 
-  user_data = <<-EOT
-#!/bin/bash
-yum update -y
-EOT
-
-
   tags = {
     Name = "PublicEC2Instance"
   }
@@ -24,11 +18,6 @@ resource "aws_instance" "private_ec2" {
   subnet_id      = var.private_subnet_ids[count.index]
   vpc_security_group_ids = [var.private_security_group_id]
   key_name = var.key_name
-
-  user_data = <<-EOT
-#!/bin/bash
-yum update -y
-EOT
 
   tags = {
     Name = "PrivateEC2Instance"
