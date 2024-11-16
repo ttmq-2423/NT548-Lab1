@@ -53,7 +53,7 @@ Resources:
 
 
  # -------------------------------------------------------------------
- PublicSubnet:
+  PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: 
